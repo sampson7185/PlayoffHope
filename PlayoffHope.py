@@ -160,6 +160,7 @@ teamNameDict = {'ANAHEIM':'ANAHEIM DUCKS',
                 'WINNIPEG JETS':'WINNIPEG JETS',
                 'WPG':'WINNIPEG JETS'
                }
+targetTeamName = ''
 
 def breakdownRecord(record):
     values = record.split('-')
@@ -168,6 +169,17 @@ def breakdownRecord(record):
     otl = int(values[2])
     points = wins * 2 + otl
     return wins,losses,otl,points
+
+def getTeamName(name):
+    global targetTeamName
+    #capitalize name
+    capitalized = name.upper()
+    try:
+        targetTeamName = teamNameDict[capitalized]
+    except KeyError as e:
+        return False
+
+    return True
 
 def main():
     #bring in current team names and standings and create list of teams
@@ -186,11 +198,11 @@ def main():
     else:
         #get name of team entered and make sure it matches a team in the list
         if len(sys.argv) == 2:
-            break
+            getTeamName(sys.argv[1])
         elif len(sys.argv) == 3:
-            break
+            getTeamName(sys.argv[1] + ' ' + sys.argv[2])
         elif len(sys.argv) == 4:
-            break
+            getTeamName(sys.argv[1] + ' ' + sys.argv[2] + ' ' + sys.argv[3])
 
 if __name__ == '__main__':
     main()
