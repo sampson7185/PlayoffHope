@@ -1,166 +1,28 @@
+from PlayoffHopeDicts import *
 import sys
+from operator import itemgetter, attrgetter
 
 class Team(object):
     """docstring for Team."""
-    def __init__(self, rank, name, wins, losses, otl, points):
+    def __init__(self, name, wins, losses, otl, points, played):
         super(Team, self).__init__()
-        self.rank = rank
         self.name = name
         self.wins = wins
         self.losses = losses
         self.otl = otl
         self.points = points
+        self.gamesPlayed = played
 
-teamNameDict = {'ANAHEIM':'ANAHEIM DUCKS',
-                'DUCKS':'ANAHEIM DUCKS',
-                'ANAHEIM DUCKS':'ANAHEIM DUCKS',
-                'ANA':'ANAHEIM DUCKS',
-                'ARIZONA':'ARIZONA COYOTES',
-                'COYOTES':'ARIZONA COYOTES',
-                'ARIZONA COYOTES':'ARIZONA COYOTES',
-                'YOTES':'ARIZONA COYOTES',
-                'ARI':'ARIZONA COYOTES',
-                'BOSTON':'BOSTON BRUINS',
-                'BRUINS':'BOSTON BRUINS',
-                'BOSTON BRUINS':'BOSTON BRUINS',
-                'BOS':'BOSTON BRUINS',
-                'BUFFALO':'BUFFALO SABRES',
-                'SABRES':'BUFFALO SABRES',
-                'BUF':'BUFFALO SABRES',
-                'CALGARY':'CALGARY FLAMES',
-                'FLAMES':'CALGARY FLAMES',
-                'CALGARY FLAMES':'CALGARY FLAMES',
-                'CGY':'CALGARY FLAMES',
-                'CAROLINA':'CAROLINA HURRICANES',
-                'HURRICANES':'CAROLINA HURRICANES',
-                'CAROLINA HURRICANES':'CAROLINA HURRICANES',
-                'CANES':'CAROLINA HURRICANES',
-                'CAR':'CAROLINA HURRICANES',
-                'CHICAGO':'CHICAGO BLACKHAWKS',
-                'BLACKHAWKS':'CHICAGO BLACKHAWKS',
-                'CHICAGO BLACKHAWKS':'CHICAGO BLACKHAWKS',
-                'HAWKS':'CHICAGO BLACKHAWKS',
-                'CHI':'CHICAGO BLACKHAWKS',
-                'COLORADO':'COLORADO AVALANCHE',
-                'AVALANCHE':'COLORADO AVALANCHE',
-                'COLORADO AVALANCHE':'COLORADO AVALANCHE',
-                'AVS':'COLORADO AVALANCHE',
-                'COL':'COLORADO AVALANCHE',
-                'COLUMBUS':'COLUMBUS BLUE JACKETS',
-                'BLUE JACKETS':'COLUMBUS BLUE JACKETS',
-                'JACKETS':'COLUMBUS BLUE JACKETS',
-                'COLUMBUS BLUE JACKETS':'COLUMBUS BLUE JACKETS',
-                'CBJ':'COLUMBUS BLUE JACKETS',
-                'DALLAS':'DALLAS STARS',
-                'STARS':'DALLAS STARS',
-                'DALLAS STARS':'DALLAS STARS',
-                'DAL':'DALLAS STARS',
-                'DETROIT':'DETROIT RED WINGS',
-                'RED WINGS':'DETROIT RED WINGS',
-                'WINGS':'DETROIT RED WINGS',
-                'DETROIT RED WINGS':'DETROIT RED WINGS',
-                'DET':'DETROIT RED WINGS',
-                'EDMONTON':'EDMONTON OILERS',
-                'OILERS':'EDMONTON OILERS',
-                'EDMONTON OILERS':'EDMONTON OILERS',
-                'EDM':'EDMONTON OILERS',
-                'FLORIDA':'FLORIDA PANTHERS',
-                'PANTHERS':'FLORIDA PANTHERS',
-                'FLORIDA PANTHERS':'FLORIDA PANTHERS',
-                'CATS':'FLORIDA PANTHERS',
-                'FLA':'FLORIDA PANTHERS',
-                'LOS ANGELES':'LOS ANGELES KINGS',
-                'KINGS':'LOS ANGELES KINGS',
-                'LOS ANGELES KINGS':'LOS ANGELES KINGS',
-                'LA':'LOS ANGELES KINGS',
-                'L.A':'LOS ANGELES KINGS',
-                'L.A.':'LOS ANGELES KINGS',
-                'LAK':'LOS ANGELES KINGS',
-                'MINNESOTA':'MINNESOTA WILD',
-                'WILD':'MINNESOTA WILD',
-                'MINNESOTA WILD':'MINNESOTA WILD',
-                'MIN':'MINNESOTA WILD',
-                'MONTREAL':'MONTREAL CANADIENS',
-                'CANADIENS':'MONTREAL CANADIENS',
-                'MONTREAL CANADIENS':'MONTREAL CANADIENS',
-                'HABS':'MONTREAL CANADIENS',
-                'MTL':'MONTREAL CANADIENS',
-                'NASHVILLE':'NASHVILLE PREDATORS',
-                'PREDATORS':'NASHVILLE PREDATORS',
-                'NASHVILLE PREDATORS':'NASHVILLE PREDATORS',
-                'PREDS':'NASHVILLE PREDATORS',
-                'NSH':'NASHVILLE PREDATORS',
-                'NEW JERSEY':'NEW JERSEY DEVILS',
-                'JERSEY':'NEW JERSEY DEVILS',
-                'DEVILS':'NEW JERSEY DEVILS',
-                'NEW JERSEY DEVILS':'NEW JERSEY DEVILS',
-                'NJD':'NEW JERSEY DEVILS',
-                'ISLANDERS':'NEW YORK ISLANDERS',
-                'NEW YORK ISLANDERS':'NEW YORK ISLANDERS',
-                'ISLES':'NEW YORK ISLANDERS',
-                'NYI':'NEW YORK ISLANDERS',
-                'RANGERS':'NEW YORK RANGERS',
-                'NEW YORK RANGERS':'NEW YORK ISLANDERS',
-                'NYR':'NEW YORK ISLANDERS',
-                'OTTAWA':'OTTAWA SENATORS',
-                'SENATORS':'OTTAWA SENATORS',
-                'OTTAWA SENATORS':'OTTAWA SENATORS',
-                'SENS':'OTTAWA SENATORS',
-                'OTT':'OTTAWA SENATORS',
-                'PHILADELPHIA':'PHILADELPHIA FLYERS',
-                'FLYERS':'PHILADELPHIA FLYERS',
-                'PHILADELPHIA FLYERS':'PHILADELPHIA FLYERS',
-                'PHILLY':'PHILADELPHIA FLYERS',
-                'PHI':'PHILADELPHIA FLYERS',
-                'PITTSBURGH':'PITTSBURGH PENGUINS',
-                'PENGUINS':'PITTSBURGH PENGUINS',
-                'PITTSBURGH PENGUINS':'PITTSBURGH PENGUINS',
-                'PENS':'PITTSBURGH PENGUINS',
-                'PIT':'PITTSBURGH PENGUINS',
-                'SAN JOSE':'SAN JOSE SHARKS',
-                'SHARKS':'SAN JOSE SHARKS',
-                'SAN JOSE SHARKS':'SAN JOSE SHARKS',
-                'SHARKIES':'SAN JOSE SHARKS',
-                'SJS':'SAN JOSE SHARKS',
-                'ST LOUIS':'ST. LOUIS BLUES',
-                'ST. LOUIS':'ST. LOUIS BLUES',
-                'BLUES':'ST. LOUIS BLUES',
-                'ST LOUIS BLUES':'ST. LOUIS BLUES',
-                'ST. LOUIS BLUES':'ST. LOUIS BLUES',
-                'STL':'ST. LOUIS BLUES',
-                'TAMPA':'TAMPA BAY LIGHTNING',
-                'TAMPA BAY':'TAMPA BAY LIGHTNING',
-                'LIGHTNING':'TAMPA BAY LIGHTNING',
-                'TAMPA BAY LIGHTNING':'TAMPA BAY LIGHTNING',
-                'BOLTS':'TAMPA BAY LIGHTNING',
-                'TBL':'TAMPA BAY LIGHTNING',
-                'TORONTO':'TORONTO MAPLE LEAFS',
-                'MAPLE LEAFS':'TORONTO MAPLE LEAFS',
-                'LEAFS':'TORONTO MAPLE LEAFS',
-                'TORONTO MAPLE LEAFS':'TORONTO MAPLE LEAFS',
-                'BUDS':'TORONTO MAPLE LEAFS',
-                'TML':'TORONTO MAPLE LEAFS',
-                'TOR':'TORONTO MAPLE LEAFS',
-                'VANCOUVER':'VANCOUVER CANUCKS',
-                'CANUCKS':'VANCOUVER CANUCKS',
-                'VANCOUVER CANUCKS':'VANCOUVER CANUCKS',
-                'NUCKS':'VANCOUVER CANUCKS',
-                'VAN':'VANCOUVER CANUCKS',
-                'VEGAS':'VEGAS GOLDEN KNIGHTS',
-                'KNIGHTS':'VEGAS GOLDEN KNIGHTS',
-                'VEGAS GOLDEN KNIGHTS':'VEGAS GOLDEN KNIGHTS',
-                'VGK':'VEGAS GOLDEN KNIGHTS',
-                'WASHINGTON':'WASHINGTON CAPITALS',
-                'CAPITALS':'WASHINGTON CAPITALS',
-                'WASHINGTON CAPITALS':'WASHINGTON CAPITALS',
-                'CAPS':'WASHINGTON CAPITALS',
-                'WSH':'WASHINGTON CAPITALS',
-                'WINNIPEG':'WINNIPEG JETS',
-                'JETS':'WINNIPEG JETS',
-                'WINNIPEG JETS':'WINNIPEG JETS',
-                'WPG':'WINNIPEG JETS'
-               }
+    def __repr__(self):
+        return '{},{},{},{},{},{}'.format(self.name,
+                                  self.gamesPlayed,
+                                  self.wins,
+                                  self.losses,
+                                  self.otl,
+                                  self.points)
+
 targetTeamName = ''
+targetTeamDiv = ''
 
 def breakdownRecord(record):
     values = record.split('-')
@@ -168,7 +30,8 @@ def breakdownRecord(record):
     losses = int(values[1])
     otl = int(values[2])
     points = wins * 2 + otl
-    return wins,losses,otl,points
+    played = wins + losses + otl
+    return wins,losses,otl,points,played
 
 def getTeamName(name):
     global targetTeamName
@@ -181,7 +44,102 @@ def getTeamName(name):
 
     return True
 
+#Result Enum:
+#   1: Home team wins in regulation
+#   2: Away team wins in regulation
+#   3: Home team wins in overtime/shootout
+#   4: Away team wins in overtime/shootout
+def updateStats(teamList,homeTeam,awayTeam,result):
+    for team in teamList:
+        if team.name == (homeTeam.upper()).rstrip():
+            team.gamesPlayed = team.gamesPlayed + 1
+            if result == 1 or result == 3:
+                team.wins = team.wins + 1
+                team.points = team.points + 2
+            elif result == 2:
+                team.losses = team.losses + 1
+            elif result == 4:
+                team.otl = team.otl + 1
+                team.points = team.points + 1
+        elif team.name == (awayTeam.upper()).rstrip():
+            team.gamesPlayed = team.gamesPlayed + 1
+            if result == 2 or result == 4:
+                team.wins = team.wins + 1
+                team.points = team.points + 2
+            elif result == 1:
+                team.losses = team.losses + 1
+            elif result == 3:
+                team.otl = team.otl + 1
+                team.points = team.points + 1
+
+def simulateRemainingGames(teamList):
+    #open remianing schedule
+    remainingSched = open('remainingGames.csv','r')
+
+    for line in remainingSched:
+        values = line.split(',')
+        updateStats(teamList,values[2],values[1],1)
+
+def printStandings(teamList,toFile):
+    if toFile:
+        standings = open('standingsOutput.csv','w')
+        standings.write('Team,Games Played,Wins,Losses,OTL,Points\n')
+    else:
+        print ('Team, Games Played, Wins, Losses, OTL, Points')
+
+    for team in sorted(teamList,key=attrgetter('points'),reverse=True):
+        if toFile:
+            standings.write(repr(team) + "\n")
+        else:
+            print (team)
+
+#This checks position of desired team vs rest of teams (typically a division).
+#TODO: In case of ties, this compares wins, but some more criteria if still tie
+#which should be added to this check, tie breakers listed below in order of precedence
+#1. Most wins
+#2. Most points in games against each other among the tied teams
+#3. The greater positive differential between goals scored for and against among the tied teams.
+def getTeamPos(teamList,targetTeam):
+    teamPos = 1
+    for team in teamList:
+        if targetTeam.name == targetTeamName and team.name == targetTeamName:
+            continue
+        elif team.points > targetTeam.points:
+            teamPos = teamPos + 1
+        elif team.points == targetTeam.points:
+            if team.wins > targetTeam.wins:
+                teamPos = teamPos + 1
+
+    return teamPos
+
+def getPossiblePlayoffPos(teamList):
+    #create a list of all teams in same division
+    sameDivision = []
+    #create a list of tuples (team, divisionalPosition)
+    teamWithPos = []
+    for team in teamList:
+        if (targetTeamDiv == divDict[team.name]):
+            sameDivision.append(team)
+        if (targetTeamName == team.name):
+            targetTeam = team
+
+    for team in sameDivision:
+        teamWithPos.append((team,getTeamPos(sameDivision,team)))
+
+    #Find which divisional spots are possible to reach if any
+    #NOTE: This gets a bit strange if a team is already in third, does that mean
+    #all three spots are available or just the two? will have to think this
+    #through further but for now will treat all teams the same way
+    for team in teamWithPos:
+        #if target team wins all games, can they pass the top 3 in the division?
+        if (team[1] == 1):
+            if (targetTeam.points + ((82 - targetTeam.gamesPlayed)*2) > team[0].points or
+                (targetTeam.points + ((82 - targetTeam.gamesPlayed)*2) == team[0].points and
+                targetTeam.wins + (82 - targetTeam.gamesPlayed) > team[0].wins)):
+                print("Can make first in division")
+
 def main():
+    global targetTeamDiv
     #bring in current team names and standings and create list of teams
     teamList = []
     standings = open('currentStandings.csv','r')
@@ -189,8 +147,8 @@ def main():
     #reads teams into teamList for use later
     for line in standings:
         values = line.split(',')
-        wins,losses,otl,points = breakdownRecord(values[2])
-        newTeam = Team(values[0],values[1],wins,losses,otl,points)
+        wins,losses,otl,points,played = breakdownRecord(values[2])
+        newTeam = Team(values[1].upper(),wins,losses,otl,points,played)
         teamList.append(newTeam)
 
     if len(sys.argv) == 1 or len(sys.argv) > 4:
@@ -198,11 +156,19 @@ def main():
     else:
         #get name of team entered and make sure it matches a team in the list
         if len(sys.argv) == 2:
-            getTeamName(sys.argv[1])
+            foundTeam = getTeamName(sys.argv[1])
         elif len(sys.argv) == 3:
-            getTeamName(sys.argv[1] + ' ' + sys.argv[2])
+            foundTeam = getTeamName(sys.argv[1] + ' ' + sys.argv[2])
         elif len(sys.argv) == 4:
-            getTeamName(sys.argv[1] + ' ' + sys.argv[2] + ' ' + sys.argv[3])
+            foundTeam = getTeamName(sys.argv[1] + ' ' + sys.argv[2] + ' ' + sys.argv[3])
+
+        if foundTeam:
+            print ("Team found, simulating remaining games...")
+            targetTeamDiv = divDict[targetTeamName]
+            #based on division and current standing, figure out what positions are possible
+            getPossiblePlayoffPos(teamList)
+            simulateRemainingGames(teamList)
+            printStandings(teamList,True)
 
 if __name__ == '__main__':
     main()
