@@ -23,6 +23,11 @@ class Team(object):
 
 targetTeamName = ''
 targetTeamDiv = ''
+targetOtherDiv = ''
+targetTeamConf = ''
+
+def getPos(team):
+    return team[1]
 
 def breakdownRecord(record):
     values = record.split('-')
@@ -93,6 +98,18 @@ def printStandings(teamList,toFile):
         else:
             print (team)
 
+#returns true if team x beats team y, false if y beats x
+def checkTeamAhead(teamx, teamy):
+    if teamx.points > teamy.points:
+        return True
+    elif teamx.points < teamy.points:
+        return False
+    elif teamx.points == teamy.points:
+        if teamx.wins > teamy.wins:
+            return True
+        elif teamx.wins < teamy.wins:
+            return False
+
 #This checks position of desired team vs rest of teams (typically a division).
 #TODO: In case of ties, this compares wins, but some more criteria if still tie
 #which should be added to this check, tie breakers listed below in order of precedence
@@ -104,42 +121,88 @@ def getTeamPos(teamList,targetTeam):
     for team in teamList:
         if targetTeam.name == targetTeamName and team.name == targetTeamName:
             continue
-        elif team.points > targetTeam.points:
+        elif checkTeamAhead(team,targetTeam):
             teamPos = teamPos + 1
-        elif team.points == targetTeam.points:
-            if team.wins > targetTeam.wins:
-                teamPos = teamPos + 1
 
     return teamPos
 
+def checkTargetTeamViability(targetTeam,teamList):
+    canMakeFirst = False
+    canMakeSecond = False
+    canMakeThird = False
+    #Find which spots are possible to reach if any
+    for team in teamList:
+        #if target team wins all games, can they pass the top 3 in the division?
+        if (targetTeam.points + ((82 - targetTeam.gamesPlayed)*2) > team[0].points or
+            (targetTeam.points + ((82 - targetTeam.gamesPlayed)*2) == team[0].points and
+            targetTeam.wins + (82 - targetTeam.gamesPlayed) > team[0].wins)):
+            if (team[1] == 1):
+                canMakeFirst = True
+            if (team[1] == 2):
+                canMakeSecond = True
+            if (team[1] == 3):
+                canMakeThird = True
+
+    return canMakeFirst, canMakeSecond, canMakeThird
+
 def getPossiblePlayoffPos(teamList):
+    canMakeFirst = False
+    canMakeSecond = False
+    canMakeThird = False
+    sameDivisionCount = 0
+    otherDivisionCount = 0
     #create a list of all teams in same division
     sameDivision = []
+    #create a list of all teams in same conference
+    sameConf = []
+    #create a list of two current wildcard teams
+    currentWC = []
     #create a list of tuples (team, divisionalPosition)
-    teamWithPos = []
+    teamWithDivPos = []
+    #create a list of tuples (team, confPosition)
+    teamWithConfPos = []
     for team in teamList:
         if (targetTeamDiv == divDict[team.name]):
             sameDivision.append(team)
         if (targetTeamName == team.name):
             targetTeam = team
+        if (targetTeamConf == confDict[team.name]):
+            sameConf.append(team)
 
     for team in sameDivision:
-        teamWithPos.append((team,getTeamPos(sameDivision,team)))
+        teamWithDivPos.append((team,getTeamPos(sameDivision,team)))
+
+    for team in sameConf:
+        teamWithConfPos.append((team,getTeamPos(sameConf,team)))
+
+    #Find which wildcard spots are possible to reach if any
+    #NOTE:Related to note about div positions, this will also need to have the more
+    #subtle rules added to it once it is more complete, for now will just use wins
+    #as a tie breaker
+    #go through the conference standings and get top three from target division and other
+    #conference division and then take top 2 left over as wildcard
+    for team in sorted(teamWithConfPos,key=getPos):
+        #check if any div spots are available
+        if divDict[team[0].name] == targetTeamDiv and sameDivisionCount < 3:
+            sameDivisionCount = sameDivisionCount + 1
+        elif divDict[team[0].name] == targetOtherDiv and otherDivisionCount < 3:
+            otherDivisionCount = otherDivisionCount + 1
+        else:
+            if len(currentWC) == 0:
+                currentWC.append((team[0],1))
+            elif len(currentWC) == 1:
+                currentWC.append((team[0],2))
+            else:
+                break
 
     #Find which divisional spots are possible to reach if any
-    #NOTE: This gets a bit strange if a team is already in third, does that mean
-    #all three spots are available or just the two? will have to think this
-    #through further but for now will treat all teams the same way
-    for team in teamWithPos:
-        #if target team wins all games, can they pass the top 3 in the division?
-        if (team[1] == 1):
-            if (targetTeam.points + ((82 - targetTeam.gamesPlayed)*2) > team[0].points or
-                (targetTeam.points + ((82 - targetTeam.gamesPlayed)*2) == team[0].points and
-                targetTeam.wins + (82 - targetTeam.gamesPlayed) > team[0].wins)):
-                print("Can make first in division")
+    canMakeFirst, canMakeSecond, canMakeThird = checkTargetTeamViability(targetTeam,teamWithDivPos)
+
+    #check if team can make current WC positions
+    canMakeWC1, canMakeWC2, garbage = checkTargetTeamViability(targetTeam,currentWC)
 
 def main():
-    global targetTeamDiv
+    global targetTeamDiv, targetTeamConf, targetOtherDiv
     #bring in current team names and standings and create list of teams
     teamList = []
     standings = open('currentStandings.csv','r')
@@ -165,6 +228,8 @@ def main():
         if foundTeam:
             print ("Team found, simulating remaining games...")
             targetTeamDiv = divDict[targetTeamName]
+            targetOtherDiv = otherDivDict[targetTeamDiv]
+            targetTeamConf = confDict[targetTeamName]
             #based on division and current standing, figure out what positions are possible
             getPossiblePlayoffPos(teamList)
             simulateRemainingGames(teamList)
