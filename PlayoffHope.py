@@ -25,6 +25,23 @@ targetTeamName = ''
 targetTeamDiv = ''
 targetOtherDiv = ''
 targetTeamConf = ''
+canMakeFirst = False
+canMakeSecond = False
+canMakeThird = False
+canMakeWC1 = False
+canMakeWC2 = False
+#create a list of all teams in same division
+sameDivision = []
+#create a list of all teams in same conference
+sameConf = []
+
+def createDivConfLists(teamList):
+    global sameDivision, sameConf
+    for team in teamList:
+        if (targetTeamDiv == divDict[team.name]):
+            sameDivision.append(team)
+        if (targetTeamConf == confDict[team.name]):
+            sameConf.append(team)
 
 def getPos(team):
     return team[1]
@@ -127,9 +144,9 @@ def getTeamPos(teamList,targetTeam):
     return teamPos
 
 def checkTargetTeamViability(targetTeam,teamList):
-    canMakeFirst = False
-    canMakeSecond = False
-    canMakeThird = False
+    first = False
+    second = False
+    third = False
     #Find which spots are possible to reach if any
     for team in teamList:
         #if target team wins all games, can they pass the top 3 in the division?
@@ -137,37 +154,27 @@ def checkTargetTeamViability(targetTeam,teamList):
             (targetTeam.points + ((82 - targetTeam.gamesPlayed)*2) == team[0].points and
             targetTeam.wins + (82 - targetTeam.gamesPlayed) > team[0].wins)):
             if (team[1] == 1):
-                canMakeFirst = True
+                first = True
             if (team[1] == 2):
-                canMakeSecond = True
+                second = True
             if (team[1] == 3):
-                canMakeThird = True
+                third = True
 
-    return canMakeFirst, canMakeSecond, canMakeThird
+    return first, second, third
 
-def getPossiblePlayoffPos(teamList):
-    canMakeFirst = False
-    canMakeSecond = False
-    canMakeThird = False
+def getPossiblePlayoffPos():
+    global canMakeFirst, canMakeSecond, canMakeThird, canMakeWC1, canMakeWC2
     sameDivisionCount = 0
     otherDivisionCount = 0
-    #create a list of all teams in same division
-    sameDivision = []
-    #create a list of all teams in same conference
-    sameConf = []
     #create a list of two current wildcard teams
     currentWC = []
     #create a list of tuples (team, divisionalPosition)
     teamWithDivPos = []
     #create a list of tuples (team, confPosition)
     teamWithConfPos = []
-    for team in teamList:
-        if (targetTeamDiv == divDict[team.name]):
-            sameDivision.append(team)
+    for team in sameDivision:
         if (targetTeamName == team.name):
             targetTeam = team
-        if (targetTeamConf == confDict[team.name]):
-            sameConf.append(team)
 
     for team in sameDivision:
         teamWithDivPos.append((team,getTeamPos(sameDivision,team)))
@@ -201,18 +208,21 @@ def getPossiblePlayoffPos(teamList):
     #check if team can make current WC positions
     canMakeWC1, canMakeWC2, garbage = checkTargetTeamViability(targetTeam,currentWC)
 
+    return
+
+#Finds the max amount of wins every other team in competition can win before the position
+#becomes unreachable to the target team
+
+#NOTE: figure out what best way of doing this is, probably still going to need
+#positions as I need the amount of points currently in that position so I know what
+#the range of points
+def checkMaxWins():
+    print ("ha")
+
 def main():
     global targetTeamDiv, targetTeamConf, targetOtherDiv
     #bring in current team names and standings and create list of teams
     teamList = []
-    standings = open('currentStandings.csv','r')
-
-    #reads teams into teamList for use later
-    for line in standings:
-        values = line.split(',')
-        wins,losses,otl,points,played = breakdownRecord(values[2])
-        newTeam = Team(values[1].upper(),wins,losses,otl,points,played)
-        teamList.append(newTeam)
 
     if len(sys.argv) == 1 or len(sys.argv) > 4:
         print('Usage: ../PlayoffHope.py TEAMNAME')
@@ -226,14 +236,37 @@ def main():
             foundTeam = getTeamName(sys.argv[1] + ' ' + sys.argv[2] + ' ' + sys.argv[3])
 
         if foundTeam:
-            print ("Team found, simulating remaining games...")
+            print ("Team found")
+
+            standings = open('currentStandings0319.csv','r')
+
+            #reads teams into teamList for use later
+            for line in standings:
+                values = line.split(',')
+                wins,losses,otl,points,played = breakdownRecord(values[2])
+                newTeam = Team(values[1].upper(),wins,losses,otl,points,played)
+                teamList.append(newTeam)
+
             targetTeamDiv = divDict[targetTeamName]
             targetOtherDiv = otherDivDict[targetTeamDiv]
             targetTeamConf = confDict[targetTeamName]
+
+            createDivConfLists(teamList)
             #based on division and current standing, figure out what positions are possible
-            getPossiblePlayoffPos(teamList)
-            simulateRemainingGames(teamList)
-            printStandings(teamList,True)
+            getPossiblePlayoffPos()
+            #if this is true, at least one playoff position is still available to the target team
+            #at least mathematically speaking, this limits unnecessary computation
+            #as it limits which teams will be looked at
+            if (canMakeFirst or canMakeSecond or canMakeThird or canMakeWC1 or canMakeWC2):
+                #now that we know a position is available, calculate max number of
+                #points in each reachable positon before it becomes unreachable
+                #Again, this just cuts the amount of teams/games that need to be considered
+                checkMaxWins()
+                simulateRemainingGames(teamList)
+                printStandings(teamList,True)
+            else:
+                print (targetTeamName + ' mathematically cannot make the playoffs.')
+                exit(0)
 
 if __name__ == '__main__':
     main()
